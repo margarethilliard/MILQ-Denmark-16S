@@ -1,6 +1,45 @@
-# This is the data repository for QIIME2 commands and R code used to analyze microbial data from Danish infant stool in relation to diarrhea, fever, and vomiting in the Mothers, Infants, and Lactation Quality study. 
+______________
+### **Summary**
+___________________
+This is the data repository for R code and QIIME2 commands used to analyze microbial data from Danish infant stool in relation to diarrhea, fever, and vomiting in the Mothers, Infants, and Lactation Quality (MILQ) study. 
 
-## R code files:
+____________
+### **Required input files**
+_______________
+- 1. REDCap data: "MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv"
+- 2. metadata file with sequencing info: "metadata-infants-complete-stool-set-after-6886-read-cutoff-withoutInfantCD144Y.txt"
+
+____________
+### **R code files**
+_______________
+
+1. 01_Denmark_stool_collection_info.R
+    1. Description: This file contains the code used to assess the metadata on the Danish infant stool collection and storage, including age at stool collection, and time between subsequent stool collections.
+    2. Inputs: REDCap data & metadata file (see above)
+    3. Output: "metadata-327-samples-with-select-stool-information.csv"
+
+2. 02_demographics_birth_mode_etc.R
+    1. Description: This file contains the R code used to summarize demographic metadata (e.g. household size, parity), infant birth mode, and infant gender.
+    2. Inputs: RedCap data & metadata file (see above)
+    3: Output: "birthmode.gender.parity.csv" 
+
+3. 03_Denmark_morbidity_frequency.R
+    1. Description: This file contains the R code used to determine the frequency of diarrhea, fever, vomiting, and medications in the infant Denmark cohort. 
+    2. Inputs: REDCap data & "metadata-327-samples-with-select-stool-information.csv"
+    3. Output: "infant.morbidities.medications.csv"
+
+4. 04_relating_fever_to_vaccinations.R
+    1. Description: This file contains the R code used to relate infant vaccination to infant fever in the same visit.
+    2. Inputs: REDCap data & "infant.morbidities.medications.csv"
+    3. Output: N/A 
+    
+5. 05_proximity_of_stool_collection_to_moribidity_and_questionnaire.R
+    1. Description: This file contains the R code used to determine how many days passed between the morbidity questionnaire and infant stool collection and to determine relative timing of stool collection to morbidity (diarrhea, fever, or vomit) in the same visit. 
+    2. Inputs: RedCap data 
+    3. Output:: N/A
+
+
+
 ### "alpha-diversity.R"
 This file contains R code used to determine if infant stool alpha-diversity differed with infant morbidity from the same visit. Linear mixed effects modeling was employed to determine if diarrhea, fever or vomiting were significant predictors of alpha-diversity. The various parameters and covariates included in models are shown in the code file. 
 
@@ -15,15 +54,6 @@ This script contains the code used to determine infant age at first introduction
 
 ### "core_microbes.R"
 This script contains the code used to identify core microbial taxa (ASVs, species, genera, families) present in all/most samples and to determine the taxa (genera and families) that were particularly abundant among this cohort. 
-
-### "demographics_birth_mode_etc.R"
-This file contains the R code used to summarize demographic metadata (e.g. household size, parity), infant birth mode, and infant gender.
-
-### "Denmark_morbidity_frequency.R"
-This file contains the R code used to determine the frequency of diarrhea, fever, vomiting, and medications in the infant Denmark cohort. 
-
-### "Denmark_stool_collection_info.R"
-This file contains the code used to assess the metadata on the Danish infant stool collection and storage, including age at stool collection, and time between subsequent stool collections.
 
 ### "differential-abundance.R"
 This file contains the R code used to test for differential abundance of stool microbes with diarrhea, fever, or vomiting. Analysis of Compositions of Microbiomes with Bias Correction 2 (ANCOM-BC2) is a stastical method for conducting differential abundance analysis of microbial counts and can be applied to longitudinal data. ANCOM-BC2 was used to determine differential abundance of stool microbes at different taxonomic levels with diarrhea, fever, or vomiting. The various parameters and covariates included in models are shown in the code file. For the microbial taxa found differentially abundant with diarhea, fever, vomiting, or a covariate, wilcoxon rank sum test was performed on the rarefied counts to confirm differential abundance with the particular condition. Graphs were also created to display statistically significant relationships between microbial abundance and diarrhea, fever, vomiting, or covariates.
@@ -40,15 +70,8 @@ This script contains the code used to identify microbial genera correlations in 
 ### "predicting_morbidity_outcomes_from_alpha_diversity.R"
 This script contains the code used to determine if infant stool alpha diversity in visit 2 is predictive of infant diarrhea, fever, or vomiting in visits 3 and/or 4. Logistic regression models were generated and the performance of the models were assessed with confusion matrices and ROC AUC.  
 
-### "proximity_of_stool_collection_to_morbidity_and_questionnaire.R"
-This file contains the R code used to determine how many days passed between the morbidity questionnaire and infant stool collection and to determine relative timing of stool collection to morbidity (diarrhea, fever, or vomit) in the same visit. 
-
 ### "qiime2-scripts.rtf"
 This file contains a collation of qiime2 scripts executed on a high performance computing cluster. 
 
-### "relating_fever_to_vaccinations.R"
-This file contains the R code used to relate infant vaccination to infant fever in the same visit.
-
 ### "taxaHFE.commands.txt"
 These are the commands used with taxaHFE version 2.0 to identify taxa from visit 2 stool samples potentially associated with diarrhea, fever, or vomiting in visit 3 and/or visit 4.
- 

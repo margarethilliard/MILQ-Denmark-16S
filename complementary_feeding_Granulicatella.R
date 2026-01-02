@@ -5,8 +5,7 @@ library(ggplot2)
 library(ggpubr)
 library(tidyverse)
 
-#PART 1: determine infant age at which something other than breastmilk was given
-#to the infant. 
+#PART 1: determine infant age at which something other than breastmilk was given to the infant. 
 
 #step 1: read in all the relevant metadata
 

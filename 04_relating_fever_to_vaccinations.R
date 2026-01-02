@@ -1,22 +1,31 @@
 #This R code is designed to gather infant vaccination information reported by moms
 #and to relate it to fever events. 
 
+# Required files: 
+# 1. REDCap data: MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv
+# 2. metadata file with sequencing and morbidity info: infant.morbidities.medications.csv
+# These were accessed via the shared MILQ folder and generated from "01_Denmark_morbidity_frequency.R" respectively 
+
+# ---- STEP 0: set working directory and load packages ----
+setwd("/Users/local-margaret/Desktop/MILQ-Denmark/") 
+
+#install.packages("tidyverse")
 library(tidyverse)
 
-#step 1: read in the metadata file with morbidity information for the samples
-#included in analysis. 
-metadata <- read.csv("../morbidity_medication_prevalences/infant.morbidities.medications.csv")
+# ---- STEP 1: read in the metadata file with morbidity information for the samples included in analysis ---- 
+#Note: this file can be generated using "01_Denmark_morbidity_frequency.R" 
+metadata <- read.csv("data/infant.morbidities.medications.csv")
 metadata <- metadata[,-1]
 
-#step 2: read in the redcap data and correct the two maternal IDs
-redcap <- read.csv("../../../../REDCap_downloads/Denmark/MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv")
+# ---- STEP 2: read in the redcap data and correct the two maternal IDs ---- 
+redcap <- read.csv("data/MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv")
 redcap[redcap$mid=="MD346m","mid"] <- "MD346M"
 redcap[redcap$mid=="MD378x","mid"] <- "MD378X"
 
-#step 3: pull out the redcap data for the 109 infants included in the analyses. 
+# ---- STEP 3: pull out the redcap data for the 109 infants included in the analyses ---- 
 redcap.v2 <- redcap[c(which(redcap$mid %in% metadata$mid)),]
 
-#step 4: See if any moms reported vaccinations for their infants
+# ---- STEP 4: see if any moms reported vaccinations for their infants ---- 
 table(redcap.v2$f204_immz_q11)
 #10 infants had immunizations sometime before 3.5 months of life. 
 table(redcap.v2$f304_immz_q11)
@@ -24,13 +33,14 @@ table(redcap.v2$f304_immz_q11)
 table(redcap.v2$f404_immz_q11)
 #82 infants had immunizations sometime between their visit 3 and visit 4.
 
-#step 5: since so many infants had vaccinations (many more than the number of infants
+# STEP 5: create a bar graph of the number of infants with vaccination reported at each visit ----
+
+#since so many infants had vaccinations (many more than the number of infants
 #with a fever in the same visit as the vaccination) there won't be a simple 
-#relationship to draw between fever and vaccinations. And no question was
-#asked in the questionnaires for the mothers to state the diagnosis of the fever,
-#so can't determine if the fever was due to the vaccine.
-#So, will create a bar graph of the number of infants with vaccination
-#reported at each visit. And include a percentage of those infants that had fever in the same visit. 
+#relationship to draw between fever and vaccinations 
+#And no question was asked in the questionnaires for the mothers to state the diagnosis 
+# of the fever, so can't determine if the fever was due to the vaccine.
+#Bar graphs will include a percentage of those infants that had fever in the same visit. 
 vaccines <- redcap.v2[, c(grep(pattern="f[234]04_immz_q11|^mid", colnames(redcap.v2)))]
 
 vaccines.long <- pivot_longer(data=vaccines, cols=2:4, names_to = "visit", values_to = "vaccinated")

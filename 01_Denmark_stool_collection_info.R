@@ -2,31 +2,43 @@
 #infant stool collection and storage, including age at stool collection, and time
 #between subsequent stool collections. 
 
-#STEP 1: read in the MILQ Denmark metadata (downloaded from REDCap) and select just the 
-#metadata related to the stool samples that we analyzed. 
-redcap <- read.csv('../../../../REDCap_downloads/Denmark/MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv')
+# Script was originally written by Laurynne Coates, accessed via GitHub: https://github.com/L-Coates/MILQ-Denmark
+# Repository was forked and updated by Margaret Hilliard starting on 12/30/2025
+
+# Required files: 
+# 1. REDCap data: MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv
+# 2. metadata file with sequencing info: metadata-infants-complete-stool-set-after-6886-read-cutoff-withoutInfantCD144Y.txt
+# These were accessed via the shared MILQ folder and email from Andrew Oliver, respectively 
+
+# ---- STEP 0: set working directory ----
+setwd("/Users/local-margaret/Desktop/MILQ-Denmark/") 
+
+# ---- STEP 1: read in the MILQ Denmark metadata (downloaded from REDCap) ----
+# select just the metadata related to the stool samples that we analyzed. 
+redcap <- read.csv('data/MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv')
 
 #we already know that there are two maternal IDs (MIDs) in the REDCap dataset that have 
-#a lowercase check letter instead of the standard uppercase check letter. Correcting
-#these MIDs now
+#a lowercase check letter instead of the standard uppercase check letter. Correcting these MIDs now
 #the closest MIDs in REDCap set are "MD36m" and "MD378x" so need to change those to capital letters
 redcap[redcap$mid=="MD346m","mid"] <- "MD346M"
 redcap[redcap$mid=="MD378x","mid"] <- "MD378X"
 
-#Read in Kable lab data on the 330 Denmark infant stool samples that are
-#being used for analysis. 
-metadata <- read.csv("../metadata-infants-complete-stool-set-after-6886-read-cutoff.csv")
-#first column is empty
-metadata <- metadata[,-1]
+#Read in Kable lab data on the 330 Denmark infant stool samples that are being used for analysis. 
+metadata <- read.delim("data/metadata-infants-complete-stool-set-after-6886-read-cutoff-withoutInfantCD144Y.txt")
 
 #make a maternal ID column and a visit column facilitate matching with the redcap data
 metadata$mid <- metadata$extraction.id
+#replace 'C' with 'M'
 metadata$mid <- gsub(pattern="^C", replacement="M", metadata$mid)
+#remove period and following number 
 metadata$mid <- gsub(pattern="[.][2-4][x|b]*", replacement="", metadata$mid)
 metadata$visit <- metadata$extraction.id
+#remove period and preceding string
 metadata$visit <- gsub(pattern="CD[0-9]*[A-Z][.]", replacement="", metadata$visit)
+#remove x/b on a few entries 
 metadata$visit <- gsub(pattern="x|b", replacement="", metadata$visit)
 
+#keep redcap maternal ids that have Denmark metadata. n=383 --> n=109
 redcap.v2 <- redcap[c(which(redcap$mid %in% metadata$mid)),]
 
 #create one row per sample
@@ -40,8 +52,7 @@ redcap.v3 <- merge(redcap.visit1, redcap.visit2, by="mid", all=F)
 redcap.v3 <- merge(redcap.v3, redcap.visit3, by="mid", all=F)
 redcap.v3 <- merge(redcap.v3, redcap.visit4, by="mid", all=F)
 
-
-#STEP 2: calculate the age at time of stool collection
+# ---- STEP 2: calculate the age at time of stool collection ----
 #the column containing infant age is "f101_dob_q5"
 #the column containing date of stool collection in visit 2 (1-3.49 months) is "f211_dosc_q5"
 #the column containing date of stool collection in visit 3 (3.5-5.9 months) is "f311_dosc_q5"
@@ -77,21 +88,30 @@ redcap.v3$visit4.stool.age.months <- redcap.v3$visit4.stool.age/30.4375
 
 range(redcap.v3$visit2.stool.age.months)
 range(redcap.v3$visit3.stool.age.months)
-#there is a missing entry so looking to see which infant stool missed a collection date
-redcap.v3[is.na(redcap.v3$visit3.stool.age.months), "mid"]
-#MD144Y, so we will look to see if the stool was collected at all
-redcap.v3[redcap.v3$mid=="MD144Y", "f311_inffeces_q4"]
-#apparently the infant feces wasn't collected so can't be certain
-#that the stool sample received that's marked CD144Y.3 is actually
-#from infant CD144Y.
-#so I am removing CD144Y from our subset of samples for analyses. 
-redcap.v4 <- redcap.v3[redcap.v3$mid!="MD144Y",]
-range(redcap.v4$visit3.stool.age.months)
 
-range(redcap.v4$visit4.stool.age.months)
+# M. Hilliard is commenting out the following code chunk because a metadata 
+# file was provided that excluded MD144Y/CD144Y (from Andrew Oliver via email)
+
+#there is a missing entry so looking to see which infant stool missed a collection date
+#redcap.v3[is.na(redcap.v3$visit3.stool.age.months), "mid"]
+#MD144Y, so we will look to see if the stool was collected at all
+#redcap.v3[redcap.v3$mid=="MD144Y", "f311_inffeces_q4"]
+#apparently the infant feces wasn't collected so can't be certain that the
+#stool sample received that's marked CD144Y.3 is actually from infant CD144Y.
+#so I am removing CD144Y from our subset of samples for analyses. 
+#redcap.v4 <- redcap.v3[redcap.v3$mid!="MD144Y",]
+#range(redcap.v4$visit3.stool.age.months)
+
+# renaming for consistency with Laurynne’s existing code
+redcap.v4 <- redcap.v3
 
 #look closely at the dates for the stool collection ages that are out of range
+# criteria = 
+# visit 2: age is < 1 month or > 3.5 months
+# visit 3: age is < 3.5 months or > 6 months
+# visit 4: age is < 6 months or > 8.5 months
 out.of.range <- redcap.v4[redcap.v4$visit2.stool.age.months<1|redcap.v4$visit2.stool.age.months>3.5|redcap.v4$visit3.stool.age.months<3.5|redcap.v4$visit3.stool.age.months>6|redcap.v4$visit4.stool.age.months<6|redcap.v4$visit4.stool.age.months>8.5,]
+# selects DOB, date of interview, date of stool collections, and age at visits/collections that we just calculated 
 out.of.range <- out.of.range[,c(1,grep(pattern="f101_d|f211_d|f311_d|f411_d|visit[2-4]", colnames(out.of.range)))]
 
 #in looking through the dates, it's clear for infant CD124Q that the year (2918) 
@@ -128,27 +148,27 @@ redcap.v4$visit2.stool.age.months <- redcap.v4$visit2.stool.age/30.4375
 redcap.v4$visit4.stool.age.months <- redcap.v4$visit4.stool.age/30.4375
 
 
-#STEP 3: change data frame into long format and generate plot of infant age at 
-#time of stool collection with coloring for visit number
+# ---- STEP 3: change data frame into long format ----
+
 age.at.stool <- redcap.v4[,c(1, grep(pattern="visit[2-4].stool.age.months", colnames(redcap.v4)))]
 colnames(age.at.stool) <- c("cid", "visit 2", "visit 3", "visit 4")
 
+#generate plot of infant age at time of stool collection with coloring for visit number
+#install.packages(c("tidyr", "ggplot2"))
 library(tidyr)
 age.at.stool.v2 <- pivot_longer(data=age.at.stool, cols = c("visit 2", "visit 3", "visit 4"), names_to = "visit", values_drop_na = TRUE)
 dim(age.at.stool.v2) #327 samples
 str(age.at.stool.v2)
 library(ggplot2)
 ggplot(data=age.at.stool.v2, aes(x=value,fill=visit))+
-    geom_dotplot()+
-    theme_bw()+
-    scale_x_continuous(breaks=c(1.0,3.5,6.0,8.49))+
-    scale_y_continuous(limits=c(0,1), labels = c(0,5,10,15,20))+
-    xlab("infant age at stool collection (months)")+ylab("number of infant stool samples")
-ggsave("Denmark.infant.age.at.stool.collection.tiff", device="tiff", dpi=600)
+  geom_dotplot()+
+  theme_bw()+
+  scale_x_continuous(breaks=c(1.0,3.5,6.0,8.49))+
+  scale_y_continuous(limits=c(0,1), labels = c(0,5,10,15,20))+
+  xlab("infant age at stool collection (months)")+ylab("number of infant stool samples")
+#ggsave("Denmark.infant.age.at.stool.collection.tiff", device="tiff", dpi=600)
 
-
-#STEP 4: calculate amount of time between subsequent stool samples for each infant
-#and plot as histograms for time between visits 2->3 and visits 3->4
+# ---- STEP 4: calculate amount of time between subsequent stool samples for each infant ----
 age.at.stool.v3 <- age.at.stool
 age.at.stool.v3$`visits 2 - 3` <- age.at.stool.v3$`visit 3`-age.at.stool.v3$`visit 2`
 age.at.stool.v3$`visits 3 - 4` <- age.at.stool.v3$`visit 4`-age.at.stool.v3$`visit 3`
@@ -156,17 +176,16 @@ age.at.stool.v3$`visits 3 - 4` <- age.at.stool.v3$`visit 4`-age.at.stool.v3$`vis
 #make into long format
 age.at.stool.v4 <- pivot_longer(data=age.at.stool.v3, cols = c("visits 2 - 3", "visits 3 - 4"), names_to = "sample points", values_drop_na = TRUE)
 
+# plot as histograms for time between visits 2->3 and visits 3->4
 ggplot(data=age.at.stool.v4, aes(x=value,fill=`sample points`))+
-    geom_dotplot()+scale_x_continuous(breaks=c(1.0,1.5,2,2.5,3,3.5,4))+
-    theme_bw()+
-    scale_y_continuous(labels = c(0,5,10,15,20))+
-    xlab("time between stool collections (months)")+
-    ylab("number of infant stool samples")
-ggsave("Denmark.time.between.stool.collection.tiff", device="tiff", dpi=600)
+  geom_dotplot()+scale_x_continuous(breaks=c(1.0,1.5,2,2.5,3,3.5,4))+
+  theme_bw()+
+  scale_y_continuous(labels = c(0,5,10,15,20))+
+  xlab("time between stool collections (months)")+
+  ylab("number of infant stool samples")
+#ggsave("Denmark.time.between.stool.collection.tiff", device="tiff", dpi=600)
 
-#STEP 5: look at stool storage and time passed until placement in freezer to estimate
-#time stool was left at room temperature before freezer storage. 
-
+# ---- STEP 5: look at stool storage and time passed until placement in freezer to estimate time stool was left at room temperature before freezer storage ---- 
 #looking at visit 2 stool first
 redcap.v4.visit2 <- redcap.v4[,c(1, grep(pattern="f211_doi|f211_dosc|f211_tosc|f211_locatn|f211_clinic|f211_hosp|f211_other|f211_hmfrez|f211_timefrez|f211_comments", colnames(redcap.v4)))]
 redcap.v4$visit2.stool.days.at.room.temp <- "tbd"
@@ -229,8 +248,7 @@ redcap.v4[c(which(redcap.v4$mid %in% redcap.v4.tbd$mid)),"visit2.stool.days.at.r
 redcap.v4$visit2.stool.days.at.room.temp
 str(redcap.v4$visit2.stool.days.at.room.temp)
 
-###now, applying the same steps to estimate the time spent at room temperature
-#for visit 3 stool samples
+#now, applying the same steps to estimate the time spent at room temperature for visit 3 stool samples
 #gathering the stool sample info into a small data frame to glance at some of the date trends
 redcap.v4.visit3 <- redcap.v4[,c(1, grep(pattern="f311_doi|f311_dosc|f311_tosc|f311_locatn|f311_clinic|f311_hosp|f311_other|f311_hmfrez|f311_timefrez|f311_comments", colnames(redcap.v4)))]
 #look at the stool samples that were not collected the same day as the interview 
@@ -290,8 +308,7 @@ redcap.v4[c(which(redcap.v4$mid %in% redcap.v4.tbd$mid)),"visit3.stool.days.at.r
 redcap.v4$visit3.stool.days.at.room.temp
 str(redcap.v4$visit3.stool.days.at.room.temp)
 
-###now, applying the same steps to estimate the time spent at room temperature
-#for visit 4 stool samples
+#now, applying the same steps to estimate the time spent at room temperature for visit 4 stool samples
 #gathering the stool sample info into a small data frame to glance at some of the date trends
 redcap.v4.visit4 <- redcap.v4[,c(1, grep(pattern="f411_doi|f411_dosc|f411_tosc|f411_locatn|f411_clinic|f411_hosp|f411_other|f411_hmfrez|f411_timefrez|f411_comments", colnames(redcap.v4)))]
 #look at the stool samples that were not collected the same day as the interview 
@@ -342,7 +359,7 @@ redcap.v4[c(which(redcap.v4$mid %in% redcap.v4.tbd$mid)),"visit4.stool.days.at.r
 redcap.v4$visit4.stool.days.at.room.temp
 str(redcap.v4$visit4.stool.days.at.room.temp)
 
-#STEP 6: see if the stool samples were scored for the stool consistency. 
+# ---- STEP 6: see if the stool samples were scored for the stool consistency ----
 table(redcap.v4$f211_const_q8_2)
 sum(is.na(redcap.v4$f211_const_q8_2)) #one visit 2 stool sample without consistency score 
 table(redcap.v4$f311_const_q8_2)
@@ -350,8 +367,7 @@ sum(is.na(redcap.v4$f311_const_q8_2)) #six visit 3 stool samples without consist
 table(redcap.v4$f411_const_q8_2)
 sum(is.na(redcap.v4$f411_const_q8_2)) #two visit 3 stool samples without consistency score
 
-#STEP 7: match up the sample.id's with the respective stool sample information
-#and write to file for use with other analyses. 
+# ---- STEP 7: match up the sample.id's with the respective stool sample information ----
 stool.info <- redcap.v4[,c(1,grep(pattern="visit[2-4][.]stool|f[2-4]11_const_q8_2", colnames(redcap.v4)))]
 stool.info.vt2 <- stool.info[,c(1, grep("f2|visit2", colnames(stool.info)))]
 colnames(stool.info.vt2) <- c("mid","stool_consistency_const_q8_2", "stool_age_days", "stool_age_months", "stool_days_at_room_temperature")
@@ -366,5 +382,5 @@ stool.info.vt4$visit <- "4"
 stool.info.v2 <- rbind(stool.info.vt2, stool.info.vt3, stool.info.vt4)
 metadata.v2 <- merge(metadata, stool.info.v2, by=c("mid", "visit"), all=F)
 
-#write to file
-write.csv(metadata.v2, "metadata-327-samples-with-select-stool-information.csv")
+#write to file for use with other analyses. 
+write.csv(metadata.v2, "data/metadata-327-samples-with-select-stool-information.csv")

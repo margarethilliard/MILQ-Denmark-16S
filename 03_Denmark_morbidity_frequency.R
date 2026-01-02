@@ -1,15 +1,24 @@
 #This script describes the steps taken to determine the frequency of morbidity
 #and medications in the Danish cohort.  
 
+# Required files: 
+# 1. REDCap data: MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv
+# 2. metadata file with sequencing info: metadata-327-samples-with-select-stool-information.csv
+# These were accessed via the shared MILQ folder and generated from "00_Denmark_stool_collection_info.R" respectively 
+
+# ---- STEP 0: set working directory and load packages ----
+setwd("/Users/local-margaret/Desktop/MILQ-Denmark/") 
+
+#install.packages(c("tidyverse", "ggplot2", "gridExtra", "cowplot", "ggvenn"))
+
 library(tidyverse)
 library(ggplot2)
 library(gridExtra)
 library(cowplot)
 library(ggvenn)
 
-#STEP 1: Read in data from REDCap and the metadata file for the 327 infant stool
-#samples that are being used for analyses. 
-redcap <- read.csv('../../../../REDCap_downloads/Denmark/MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv')
+# ---- STEP 1: Read in data from REDCap and the metadata file for the 327 infant stool samples that are being used for analyses ----
+redcap <- read.csv('data/MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv')
 #we already know that there are two maternal IDs (MIDs) in the REDCap dataset that have 
 #a lowercase check letter instead of the standard uppercase check letter. Correcting
 #these MIDs now.
@@ -17,13 +26,13 @@ redcap[redcap$mid=="MD346m","mid"] <- "MD346M"
 redcap[redcap$mid=="MD378x","mid"] <- "MD378X"
 
 #Read in Kable lab data on Denmark samples processed and sent for sequencing
-metadata <- read.csv("../sociodemographics_and_sample_collection_info/metadata-327-samples-with-select-stool-information.csv")
+#Note: this file can be generated using "00_Denmark_stool_collection_info.R" with "metadata-infants-complete-stool-set-after-6886-read-cutoff-withoutInfantCD144Y.txt" as input 
+metadata <- read.csv("data/metadata-327-samples-with-select-stool-information.csv")
 
-#cut down redcap data to the maternal IDs in the metadata file
+# keep redcap maternal ids that have Denmark metadata. n=383 --> n=109
 redcap <- redcap[c(which(redcap$mid %in% metadata$mid)),]
     
-#STEP 2: determine if all mothers completed morbidity questionnaires for themselves
-#and their infants at each visit. 
+# ---- STEP 2: determine if all mothers completed morbidity questionnaires for themselves and their infants at each visit ----
 unique(redcap$redcap_event_name)
 table(redcap[redcap$redcap_event_name=="10__349_months_arm_1","f204_maternal_infant_morbidity_1_to_349m_complete"])
 #11 were incomplete, 98 were complete
@@ -32,7 +41,7 @@ table(redcap[redcap$redcap_event_name=="35__599_months_arm_1","f304_maternal_inf
 table(redcap[redcap$redcap_event_name=="60__849_months_arm_1","f404_maternal_infant_morbidity_35_to_599m_complete"])
 #5 were incomplete, and 104 were complete. 
 
-#STEP 3:  Change data into wide format so that each child only has one row of data.  
+# ---- STEP 3:  Change data into wide format so that each child only has one row of data ----
 #selecting the columns of interest
 redcap.visit1 <- redcap[redcap$redcap_event_name=="2__3_days_postpart_arm_1",]
 redcap.visit1 <- redcap.visit1[,c(1,grep(pattern="f101|f003", colnames(redcap.visit1)))]
@@ -47,14 +56,13 @@ redcap.wide <- merge(redcap.visit1, redcap.visit2, by="mid", all=F)
 redcap.wide <- merge(redcap.wide, redcap.visit3, by="mid", all=F)
 redcap.wide <- merge(redcap.wide, redcap.visit4, by="mid", all=F)
 
-#STEP 4: look at the number of infants with an illness in visit 2. 
+# ---- STEP 4: look at the number of infants with an illness in visit 2 ----
 
 #diarrhea in the past week
 table(redcap.wide$f204_diarrhoea_q5_1) #two infants had diarrhea
 
 #diarrhea since birth, not including the past week. 
 table(redcap.wide$f204_diarrhoea_q6_1) #seven infants had diarrhea
-
 
 #vomiting in the past week
 table(redcap.wide$f204_vomitn_q5_2) #two infants had vomiting
@@ -105,7 +113,7 @@ table(visit2.fever$visit2.fever>0)#eight infants total had fever during visit 2.
 visit2.morbidities <- merge(visit2.diarrhea, visit2.fever, by="mid", all=F)
 visit2.morbidities <- merge(visit2.morbidities, visit2.vomit, by="mid", all=F)
 
-#STEP 5: look at the number of infants with an illness in visit 3
+# ---- STEP 5: look at the number of infants with an illness in visit 3 ----
 
 #diarrhea in the past week
 table(redcap.wide$f304_diarrhoea_q5_1) #three infants had diarrhea
@@ -167,7 +175,7 @@ visit3.morbidities <- merge(visit3.morbidities, visit3.vomit, by="mid", all=F)
 #now look to see if infant MD070Y which had parecheco virus also had diarrhea, fever or vomiting
 visit3.morbidities[visit3.morbidities$mid=="MD070Y",] #the infant had fever. 
 
-#STEP 6: look at the number of infants with an illness in visit 4
+# ---- STEP 6: look at the number of infants with an illness in visit 4 ----
 
 #diarrhea in the past week
 table(redcap.wide$f404_diarrhoea_q5_1) #four infants had diarrhea
@@ -239,8 +247,7 @@ visit4.morbidities[visit4.morbidities$mid=="MD312P",] #the infant had fever and 
 
 
 
-#STEP 7: look at the medications infants received during the study, including supplements
-#such as probiotic, laxative, and iron. 
+# ---- STEP 7: look at the medications infants received during the study, including supplements such as probiotic, laxative, and iron ---- 
 
 #first, visit 2:
 #antibiotic during visit 2
@@ -351,7 +358,6 @@ table(visit2.probiotic$visit2.probiotic>0) #24 infants had probiotic
 #combine all the medication information from visit 2 in a dataframe
 visit2.medication <- merge(visit2.antibiotic, visit2.laxative, by="mid", all=F)
 visit2.medication <- merge(visit2.medication, visit2.probiotic, by="mid", all=F)
-
 
 #now, visit 3:
 #antibiotic during visit 3
@@ -478,7 +484,6 @@ table(visit3.probiotic$visit3.probiotic>0) #18 infants had probiotic
 #combine all the medication information from visit 3 in a dataframe
 visit3.medication <- merge(visit3.antibiotic, visit3.laxative, by="mid", all=F)
 visit3.medication <- merge(visit3.medication, visit3.probiotic, by="mid", all=F)
-
 
 #now, visit 4:
 #antibiotic during visit 4
@@ -614,7 +619,7 @@ table(visit4.probiotic$visit4.probiotic>0) #11 infants had probiotic
 visit4.medication <- merge(visit4.antibiotic, visit4.laxative, by="mid", all=F)
 visit4.medication <- merge(visit4.medication, visit4.probiotic, by="mid", all=F)
 
-#STEP 8: combine the morbidity and medication data together in a table to make a figure. 
+# ---- STEP 8: combine the morbidity and medication data together in a table to make a figure ---- 
 
 df.illness.medx <- merge(visit2.morbidities, visit3.morbidities, by="mid", all=F)
 df.illness.medx <- merge(df.illness.medx, visit4.morbidities, by="mid", all=F)
@@ -803,8 +808,7 @@ medication.morbidity.table <- rbind(visit2.info, visit3.info, visit4.info)
 metadata <- metadata[, -1]
 metadata.v2 <- merge(x=metadata, y=medication.morbidity.table, by=c("mid", "visit"), all=T)
 
-#STEP 10: make columns to indicate if the child EVER (in any of the three visits) had:
-#diarrhea, fever, and/or vomit
+# ---- STEP 10: make columns to indicate if the child EVER (in any of the three visits) had: diarrhea, fever, and/or vomit ---- 
 infant.diarrhea.in.any.visit <- unique(metadata.v2[metadata.v2$infant.diarrhea=="yes","mid"])
 metadata.v2$infant.diarrhea.ever.in.study <- "no"
 metadata.v2[c(which(metadata.v2$mid %in% infant.diarrhea.in.any.visit)),"infant.diarrhea.ever.in.study"] <- "yes"
@@ -830,8 +834,8 @@ metadata.v2[c(which(metadata.v2$mid %in% infant.sick.in.any.visit)),"infant.sick
 length(infant.sick.in.any.visit)
 length(unique(metadata.v2[metadata.v2$infant.sick.ever.in.study=="yes","mid"]))
 
-#STEP 11: make columns for child's morbidity status in each visit. For example,
-#if a child had diarrhea in visit 3, then all stool samples (from visits 2, 3 and 4)
+# --- STEP 11: make columns for child's morbidity status in each visit ---- 
+# For example, if a child had diarrhea in visit 3, then all stool samples (from visits 2, 3 and 4)
 #for that child will have the value "yes" for diarrhea in visit 3. 
 
 #for diarrhea
@@ -858,7 +862,6 @@ metadata.v2$infant.diarrhea.in.visit3.or.visit4 <- "no"
 metadata.v2[metadata.v2$infant.diarrhea.in.visit3=="yes", "infant.diarrhea.in.visit3.or.visit4"] <- "yes"
 metadata.v2[metadata.v2$infant.diarrhea.in.visit4=="yes", "infant.diarrhea.in.visit3.or.visit4"] <- "yes"
 length(unique(metadata.v2[metadata.v2$infant.diarrhea.in.visit3.or.visit4=="yes",][["mid"]]))
-
 
 #for fever
 metadata.v2$infant.fever.in.visit2 <- "no"
@@ -910,15 +913,12 @@ metadata.v2[metadata.v2$infant.vomit.in.visit3=="yes", "infant.vomit.in.visit3.o
 metadata.v2[metadata.v2$infant.vomit.in.visit4=="yes", "infant.vomit.in.visit3.or.visit4"] <- "yes"
 length(unique(metadata.v2[metadata.v2$infant.vomit.in.visit3.or.visit4=="yes",][["mid"]]))
 
-
 #change the order of columns, and omit the column that was a place holder for row names
-metadata.v3 <- metadata.v2[, c(4:5,1:2,6:47)]
+# metadata.v3 <- metadata.v2[, c(4:5,1:2,6:47)]
 
-write.csv(metadata.v3, "infant.morbidities.medications.csv")
+write.csv(metadata.v2, "data/infant.morbidities.medications.csv")
 
-#STEP 12: Gather information on the total reported cases of morbidity, duration of
-#morbidities, if they were diagnosed, and if they were treated.
-
+# ---- STEP 12: Gather information on the total reported cases of morbidity, duration of morbidities, if they were diagnosed, and if they were treated ----
 #gather the total number of diarrhea cases. 
 diarrhea.cases <- redcap.wide[,c(1,grep(pattern="f[234]04_diarrhoea_q5_1$|f[234]04_diarrhoea[1234]_q6_1_[1234]$", colnames(redcap.wide)))]
 diarrhea.cases <- pivot_longer(data=diarrhea.cases, cols=c(2:16))
@@ -945,6 +945,7 @@ summary(diarrhea.duration$value)
 #the median duration was 5 days, and the mean was 6.8. 
 #the max was 25, the min was 1 day, the first quartile was
 #2 days, third quartile was 10.8 days. 
+
 jpeg(filename="histogram.diarrhea.duration.jpeg", width=6, height=6, res=600, units="in")
 hist(diarrhea.duration$value, breaks=c(1:25), axes=F, main=NULL, xlab=NULL)
 title(main=NULL, xlab="diarrhea duration (days)")
@@ -1095,9 +1096,9 @@ table(vomit.treatment$value)
 redcap.wide[c(which(redcap.wide$mid %in% c(vomit.treatment[vomit.treatment$value=="1",][["mid"]]))),c(grep(pattern="^mid|f[234]04_sptreatmt_q5_2_4|f[234]04_sptreatmt_q6_2", colnames(redcap.wide)))] %>% print()
 #antiemetic and painkiller. 
 
-#STEP 13: make another color-coded list of the morbidity by infant within each visit,
-#but this time include a Venn diagram of the sick infants within that visit that
-#to show how morbidities sometimes co-occurred in the same visit for an infant. 
+# ---- STEP 13: make another color-coded list of the morbidity by infant within each visit ---- 
+# include a Venn diagram of the sick infants within that visit 
+# to show how morbidities sometimes co-occurred in the same visit for an infant. 
 list.visit2 <- list(diarrhea = medication.morbidity.table[medication.morbidity.table$visit=="2" & medication.morbidity.table$infant.diarrhea=="yes","mid"], fever = medication.morbidity.table[medication.morbidity.table$visit=="2" & medication.morbidity.table$infant.fever=="yes","mid"], vomit=medication.morbidity.table[medication.morbidity.table$visit=="2" & medication.morbidity.table$infant.vomit=="yes","mid"])
 venndiag.visit2.morbidities <- ggvenn(data=list.visit2, columns= c("diarrhea", "fever", "vomit"), fill_color=c("#F8766D", "#00BA38", "#619CFF"), set_name_size=c(0,0,0), text_size=4, show_percentage=F) + labs(title="visit 2")+theme(plot.margin=unit(c(-0.5,-1,-0.5,-1), "cm"), plot.title=element_text(vjust=-10))
 

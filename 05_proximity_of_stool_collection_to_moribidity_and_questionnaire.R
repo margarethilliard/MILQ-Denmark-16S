@@ -7,11 +7,12 @@
 #Part 3 of this script has the code used to determine how many morbidity cases
 #definitively occurred before stool collection. 
 
-#Part 1...
+# ---- Part 1 ----
+setwd("/Users/local-margaret/Desktop/MILQ-Denmark/") 
 
 #read in the Denmark REDCap dataset and look across the data to determine
 #the time that passed between stool collection and morbidity questionnaire. 
-redcap <- read.csv("../../../../REDCap_downloads/Denmark/MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv")
+redcap <- read.csv("data/MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv")
 str(redcap[,c(grep(pattern="^mid|f[234]11_dosc_q5|f[234]04_doi_q3", colnames(redcap)))])
 
 #we already know that MD378X and MD346M have lowercase letters in the redcap dataset
@@ -45,8 +46,7 @@ table(redcap$days_stool_collection_to_morbidity_questionnaire.visit4)
 #selecting just the samples that were used in the infant stool microbe associations
 #with morbidity (i.e. the subset of 327 stool samples)
 
-metadata <- read.csv("../metadata-infants-complete-stool-set-after-6886-read-cutoff-withoutInfantCD144Y.csv")
-metadata <- metadata[,-1]
+metadata <- read.delim("data/metadata-infants-complete-stool-set-after-6886-read-cutoff-withoutInfantCD144Y.txt")
 metadata$mid <- gsub(metadata$extraction.id, pattern="[.][234][xb]*", replacement="")
 metadata$mid <- gsub(metadata$mid, pattern="^C", replacement="M")
 unique(metadata$mid)
@@ -68,12 +68,10 @@ table(redcap.v2$days_stool_collection_to_morbidity_questionnaire.visit3)
 summary(redcap.v2$days_stool_collection_to_morbidity_questionnaire.visit4)
 unique(redcap.v2$days_stool_collection_to_morbidity_questionnaire.visit4)
 table(redcap.v2$days_stool_collection_to_morbidity_questionnaire.visit4) 
-#almost all stool samples were collected before the morbidity questionnaire
-#was collected. 
+#almost all stool samples were collected before the morbidity questionnaire was collected. 
 #But there are some samples from visit 2 and 4 that have either the stool collection date or the morbidity
 #questionnaire date wrong because too many days (e.g. >75 days) passed between
-#the stool collection and the morbidity questionnaire to be considered from the same
-#visit or study. 
+#the stool collection and the morbidity questionnaire to be considered from the same visit or study. 
 
 #looking at the interview dates, sample collection dates, and birth dates to help guide date correction. 
 redcap.v2[c(abs(redcap.v2$days_stool_collection_to_morbidity_questionnaire.visit2)>75 & !is.na(redcap.v2$days_stool_collection_to_morbidity_questionnaire.visit2)),c(grep(pattern="^mid|f211_dosc_q5|f211_doi_q3|f204_doi_q3", colnames(redcap.v2)))]
@@ -83,22 +81,18 @@ redcap.v2[redcap.v2$mid=="MD124Q", "f101_dob_q5"] #dob: 2018-08-03
 redcap.v2[redcap.v2$mid=="MD199W", "f101_dob_q5"] #dob: 2018-11-06
 redcap.v2[redcap.v2$mid=="MD182C", "f101_dob_q5"] #dob: 2018-10-16
 #for visit 2, for both interview dates, the year is 2018, whereas the year for sample collection
-#date is 2918 or 2019 so it looks like the date of sample collection should be corrected to
-#2018. 
+#date is 2918 or 2019 so it looks like the date of sample collection should be corrected to 2018. 
 #For visit 3, there were no suspected incorrect dates for stool collection or interview date.
 #For visit 4, the stool collection date (specifically, the year) is incorrect, 
-#because it is earlier than the child's date of birth. It should be changed to the
-#year 2019. 
+#because it is earlier than the child's date of birth. It should be changed to the year 2019. 
 
 redcap.v2[c(redcap.v2$mid=="MD124Q"&redcap.v2$redcap_event_name=="10__349_months_arm_1"),"f211_dosc_q5"] <- "2018-09-22"
 redcap.v2[c(redcap.v2$mid=="MD199W"&redcap.v2$redcap_event_name=="10__349_months_arm_1"),"f211_dosc_q5"] <- "2018-12-15"
 redcap.v2[c(redcap.v2$mid=="MD182C"&redcap.v2$redcap_event_name=="60__849_months_arm_1"),"f411_dosc_q5"] <- "2019-05-21"
 
-#recalculate the days between stool sample collection and morbidity questionnaire
-#for visits 2 and 4. 
+#recalculate the days between stool sample collection and morbidity questionnaire for visits 2 and 4. 
 redcap.v2$f211_dosc_q5 <- as.Date(redcap.v2$f211_dosc_q5, format="%Y-%m-%d")
 redcap.v2$f411_dosc_q5 <- as.Date(redcap.v2$f411_dosc_q5, format="%Y-%m-%d")
-
 
 redcap.v2$days_stool_collection_to_morbidity_questionnaire.visit2 <- as.numeric(difftime(time1=redcap.v2$f211_dosc_q5, time2=redcap.v2$f204_doi_q3, units="days"))
 redcap.v2$days_stool_collection_to_morbidity_questionnaire.visit4 <- as.numeric(difftime(time1=redcap.v2$f411_dosc_q5, time2=redcap.v2$f404_doi_q3, units="days"))
@@ -119,8 +113,7 @@ abline(v=c(-6, 0), col="red",lty="dashed")
 dev.off()
 
 #determine the median number of days passed between stool collection and morbidity
-#questionnaire for all stool samples (regardless of visit) and for stool samples
-#within each visit. 
+#questionnaire for all stool samples (regardless of visit) and for stool samples within each visit. 
 median(c(redcap.v2$days_stool_collection_to_morbidity_questionnaire.visit2,redcap.v2$days_stool_collection_to_morbidity_questionnaire.visit3, redcap.v2$days_stool_collection_to_morbidity_questionnaire.visit4), na.rm=T)
 #-1 day for all stool samples (i.e. stool collected the day before the questionnaire was completed)
 
@@ -142,7 +135,7 @@ sum(c(days.between.stool.and.questionnaire[days.between.stool.and.questionnaire$
 sum(c(days.between.stool.and.questionnaire[days.between.stool.and.questionnaire$Var1>=-6 & days.between.stool.and.questionnaire$Var1<=0,"Freq"]))
 #298 stool samples were collected within the week prior to the interview. 
 
-#Part 2 ...
+# ---- Part 2 ----
 
 #Looking within each visit at how many infants had a morbidity of interest (diarrhea,
 #fever, or vomiting) within the week leading up to the morbidity questionnaire,
@@ -193,8 +186,7 @@ redcap.v2[redcap.v2$f304_diarrhoea_q5_1==1 & !is.na(redcap.v2$f304_diarrhoea_q5_
 #vomiting in the past week
 table(redcap.v2$f304_vomitn_q5_2) #four infants had recent vomiting in visit 3, out of 7 total infants that had vomit in visit 3. 
 redcap.v2[redcap.v2$f304_vomitn_q5_2==1 & !is.na(redcap.v2$f304_vomitn_q5_2),c("f304_ill_q5_9", "f304_diarrhoea_q5_1", "f304_cough_q5_3", "f304_rapdbreath_q5_4", "f304_fever_q5_5", "f304_cold_q5_6", "f304_earache_q5_7", "f304_other_q5_8")]
-#only one that had an illness on day of interview and it could have been a cold, cough
-#or rapid breathing. 
+#only one that had an illness on day of interview and it could have been a cold, cough or rapid breathing. 
 redcap.v2[redcap.v2$f304_vomitn_q5_2==1 & !is.na(redcap.v2$f304_vomitn_q5_2),c("f304_ill_q5_9","days_stool_collection_to_morbidity_questionnaire.visit3")]
 #stool was collected 2 days prior to morbidity questionnaire for the infant that was
 #sick on day of interview, and stool was collected 1, 2, and 7 days prior to interview for 
@@ -262,7 +254,7 @@ redcap.v2[redcap.v2$f404_fever_q5_5==1 & !is.na(redcap.v2$f404_fever_q5_5),c("f4
 #(i.e. before the week of interview); so we can say that the stool was collected
 #BEFORE the fever. 
 
-#Part 3...
+# ---- Part 3 ----
 
 #Looking within each visit, to determine how many infants with reported morbidity
 #had a stool sample collected, definitively, after the morbidity. 
@@ -325,4 +317,3 @@ redcap.v2[redcap.v2$f404_fever_q5_5==0 & !is.na(redcap.v2$f404_fever_q5_5) & red
 #during the week prior to the interview but fever was not during that week. One 
 #stool was collected 9 days after morbidity interview but we can still say that 
 #stool was collected after the fever. 
-

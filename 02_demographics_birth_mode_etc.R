@@ -2,25 +2,28 @@
 #demographic and certain metadata features of the Denmark infants among those
 #being used for analyses. 
 
-#STEP 1: read in the metadata file of the infant samples being used for analysis, 
-#and use to select REDCap data. 
+# ---- STEP 0: set working directory ----
+setwd("/Users/local-margaret/Desktop/MILQ-Denmark/") 
 
-metadata <- read.csv("../metadata-infants-complete-stool-set-after-6886-read-cutoff-withoutInfantCD144Y.csv")
+# ---- STEP 1: read in the metadata file of the infant samples being used for analysis, and use to select REDCap data. ---- 
+
+metadata <- read.delim("data/metadata-infants-complete-stool-set-after-6886-read-cutoff-withoutInfantCD144Y.txt")
 #make a maternal ID column to match up with the redcap dataset
 metadata$mid <- metadata$extraction.id
 metadata$mid <- gsub(pattern="^C", replacement="M", metadata$mid)
 metadata$mid <- gsub(pattern="[.][2-4][x|b]*", replacement="", metadata$mid)
 
-redcap <- read.csv("../../python_scripts/translated_Denmark_REDCap_metadata.csv")
+#redcap <- read.csv("../../python_scripts/translated_Denmark_REDCap_metadata.csv")
+redcap <- read.csv("data/MILQMAINSTUDYDENMARK_DATA_2022-10-11_2251.csv")
 #we know a couple maternal id's have a lowercase check letter which needs to be
 #switched to uppercase for purposes of matching. 
 redcap[redcap$mid=="MD346m","mid"] <- "MD346M"
 redcap[redcap$mid=="MD378x","mid"] <- "MD378X"
-redcap <- redcap[,-1]
+#redcap <- redcap[,-1]
 
 redcap.v2 <- redcap[c(which(redcap$mid %in% metadata$mid)),]
 
-#STEP 2: look at birth mode, infant gender, parity
+# ---- STEP 2: look at birth mode, infant gender, parity ----
 unique(redcap.v2$redcap_event_name)
 redcap.v2.f201 <- redcap.v2[redcap.v2$redcap_event_name=="10__349_months_arm_1",c(1,grep(pattern="f201|f101", colnames(redcap.v2)))]
 length(unique(redcap.v2.f201$mid))
@@ -44,13 +47,12 @@ table(redcap.v2$f003_chdrn_q8+redcap.v2$f003_adults_q7)
 #for 8 mothers, it's five people in household. 
 #for 1 mother, it's six people in household. 
 
-#STEP 3: look at some of mother's conditions like pre-eclampsia and gestational diabetes
-#and infant pre-term birth
+# ---- STEP 3: look at some of mother's conditions like pre-eclampsia and gestational diabetes and infant pre-term birth ----
 table(redcap.v2$f101_preec_q24) #none had pre-eclampsia
 table(redcap.v2$f101_gestdiab_q25) #none had gestational diabetes
 table(redcap.v2$f101_preterm_q5_3) #none were pre-term
 
-#STEP 4: match up to stool sample IDs and write to file. 
+# ---- STEP 4: match up to stool sample IDs and write to file ----
 
 redcap.data.of.interest <- redcap.v2.f201[, c(grep(pattern="^mid|f201_mod_q11$|f201_infgend_q10$", colnames(redcap.v2.f201)))]
 colnames(redcap.data.of.interest) <- c("mid", "infant.gender", "mode.of.delivery")
@@ -84,7 +86,7 @@ redcap.data.of.interest <- merge(x=redcap.data.of.interest, y=redcap.visit2[, c(
 metadata.v2 <- merge(x=metadata, y=redcap.data.of.interest, by="mid", all=F)
 
 #change order of columns and remove the placeholder column
-metadata.v3 <- metadata.v2[,c(3:27,1)]
+#metadata.v3 <- metadata.v2[,c(3:27,1)]
+metadata.v3 <- metadata.v2
 
-write.csv(metadata.v3, "birthmode.gender.parity.csv", row.names = F)
-
+write.csv(metadata.v3, "data/birthmode.gender.parity.csv", row.names = F)
